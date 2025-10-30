@@ -11,8 +11,9 @@ X_train, y_train, X_valid, y_valid = d.prepare_for_training()
 y_train = y_train.reshape(-1, 1)
 y_valid = y_valid.reshape(-1, 1)
 
-model = NeuralNetwork(input_size=X_train.shape[1], hidden_size=32, learning_rate=0.01)
-model.train(X_train, y_train, epochs=5000, verbose=True)
+model = NeuralNetwork(input_size=X_train.shape[1], 
+hidden_size=32, hidden_size2=16, learning_rate=0.01, huber_delta=1.0)
+model.train(X_train, y_train, epochs=1000, verbose=True)
 
 y_pred = model.predict(X_valid)
 val_loss = model.compute_loss(y_valid, y_pred)

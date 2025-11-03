@@ -6,36 +6,36 @@ def relu(x):
 def relu_derivative(x):
   return (x > 0).astype(float)
 
-# Neural Network for goal differential prediction
-# Uses Huber loss to handle outliers
-# Uses Adam optimizer
+def softmax(logits):
+  # Stable softmax
+  z = logits - np.max(logits, axis=1, keepdims=True)
+  exp_z = np.exp(z)
+  return exp_z / np.sum(exp_z, axis=1, keepdims=True)
 
-class NeuralNetworkDiff:
-  def __init__(self, input_size, hidden_size, hidden_size2=None, learning_rate=1e-3, huber_delta=1.0,
-               beta1=0.9, beta2=0.999, eps=1e-8, weight_decay=5e-4):
+class NeuralNetworkWinner:
+  def __init__(self, input_size, hidden_size, hidden_size2=None, learning_rate=0.01,
+               beta1=0.9, beta2=0.999, eps=1e-8, weight_decay=0.0):
     self.lr = learning_rate
-    self.huber_delta = huber_delta
     self.beta1 = beta1
     self.beta2 = beta2
     self.eps = eps
     self.weight_decay = weight_decay
 
-    # if second hidden size not provided, mirror the first
     self.h1 = hidden_size
     self.h2 = hidden_size if hidden_size2 is None else hidden_size2
 
-    # He initialization for ReLU layers: N(0, sqrt(2/fan_in))
+    # He init for ReLU layers
     self.W1 = np.random.randn(input_size, self.h1) * np.sqrt(2.0 / max(1, input_size))
     self.b1 = np.zeros((1, self.h1))
 
     self.W2 = np.random.randn(self.h1, self.h2) * np.sqrt(2.0 / max(1, self.h1))
     self.b2 = np.zeros((1, self.h2))
 
-    # Output layer remains linear; use He scaling based on hidden2 size
-    self.W3 = np.random.randn(self.h2, 1) * np.sqrt(2.0 / max(1, self.h2))
-    self.b3 = np.zeros((1, 1))
+    # Output: 3 classes [home_win, draw, away_win]
+    self.W3 = np.random.randn(self.h2, 3) * np.sqrt(1.0 / max(1, self.h2))
+    self.b3 = np.zeros((1, 3))
 
-    # Adam optimizer state
+    # Adam state
     self.t = 0
     self.mW1 = np.zeros_like(self.W1); self.vW1 = np.zeros_like(self.W1)
     self.mb1 = np.zeros_like(self.b1); self.vb1 = np.zeros_like(self.b1)
@@ -51,47 +51,35 @@ class NeuralNetworkDiff:
     self.Z2 = np.dot(self.A1, self.W2) + self.b2
     self.A2 = relu(self.Z2)
 
-    self.Z3 = np.dot(self.A2, self.W3) + self.b3  # linear output
-    return self.Z3
+    self.logits = np.dot(self.A2, self.W3) + self.b3
+    self.probs = softmax(self.logits)
+    return self.probs
 
-  def compute_loss(self, y_true, y_pred):
-    # Huber loss is less sensitive to outliers than MSE
-    e = y_true - y_pred
-    abs_e = np.abs(e)
-    delta = self.huber_delta
-    quadratic = 0.5 * (e ** 2)
-    linear = delta * (abs_e - 0.5 * delta)
-    loss = np.where(abs_e <= delta, quadratic, linear)
+  def compute_loss(self, y_true_onehot, y_pred_probs, eps=1e-12):
+    # Cross-entropy loss for one-hot labels
+    p = np.clip(y_pred_probs, eps, 1.0)
+    loss = -np.sum(y_true_onehot * np.log(p), axis=1)
     return np.mean(loss)
 
-  def compute_mse(self, y_true, y_pred):
-    return np.mean((y_true - y_pred) ** 2)
-  
-  def compute_mae(self, y_true, y_pred):
-    return np.mean(np.abs(y_true - y_pred))
+  def compute_accuracy(self, y_true_onehot, y_pred_probs):
+    return np.mean(np.argmax(y_true_onehot, axis=1) == np.argmax(y_pred_probs, axis=1))
 
-
-  def backward(self, X, y_true, y_pred):
+  def backward(self, X, y_true_onehot, y_pred_probs):
     m = X.shape[0]
-    # Huber gradient wrt predictions
-    e = y_pred - y_true
-    delta = self.huber_delta
-    dZ3 = np.clip(e, -delta, delta) / m  # derivative of Huber wrt y_pred
-
-    # Gradients for output layer
+    # Softmax + cross-entropy gradient: dL/dlogits = (probs - y)/m
+    dZ3 = (y_pred_probs - y_true_onehot) / m
     dW3 = np.dot(self.A2.T, dZ3)
     db3 = np.sum(dZ3, axis=0, keepdims=True)
     if self.weight_decay > 0.0:
       dW3 += self.weight_decay * self.W3
 
-    # Backprop into second hidden layer
     dA2 = np.dot(dZ3, self.W3.T)
     dZ2 = dA2 * relu_derivative(self.Z2)
     dW2 = np.dot(self.A1.T, dZ2)
     db2 = np.sum(dZ2, axis=0, keepdims=True)
     if self.weight_decay > 0.0:
       dW2 += self.weight_decay * self.W2
-    # Backprop into first hidden layer
+
     dA1 = np.dot(dZ2, self.W2.T)
     dZ1 = dA1 * relu_derivative(self.Z1)
     dW1 = np.dot(X.T, dZ1)
@@ -104,7 +92,6 @@ class NeuralNetworkDiff:
     self.dW3, self.db3 = dW3, db3
 
   def update_weights(self):
-        # Adam update with bias correction
         self.t += 1
         b1, b2, eps, lr = self.beta1, self.beta2, self.eps, self.lr
 
@@ -147,17 +134,22 @@ class NeuralNetworkDiff:
         vb3_hat = self.vb3 / (1 - b2 ** self.t)
         self.b3 -= lr * mb3_hat / (np.sqrt(vb3_hat) + eps)
 
-  def train(self, X, y, epochs=1000, verbose=True):
+  def train(self, X, y_onehot, epochs=1000, verbose=True):
     for epoch in range(epochs):
-      y_pred = self.forward(X)
-      self.backward(X, y, y_pred)
+      probs = self.forward(X)
+      self.backward(X, y_onehot, probs)
       self.update_weights()
 
       if verbose and epoch % 100 == 0:
-        loss = self.compute_loss(y, y_pred)
-        print(f"Epoch {epoch}, Loss: {loss}")
-        print(f"Baseline Loss: {self.compute_loss(y, np.zeros_like(y))}")
+        loss = self.compute_loss(y_onehot, probs)
+        acc = self.compute_accuracy(y_onehot, probs)
+        print(f"Epoch {epoch}, Loss: {loss:.4f}, Acc: {acc:.4f}")
+
+  def predict_proba(self, X):
+        return self.forward(X)
 
   def predict(self, X):
-        """Predict goal differential for new data."""
-        return self.forward(X)
+        probs = self.forward(X)
+        return np.argmax(probs, axis=1)
+
+

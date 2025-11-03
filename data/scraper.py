@@ -39,8 +39,12 @@ class DataScraper:
             self.fetch_all()
         return self.df.copy()
     
-    def prepare_for_training(self, split: float = 0.8):
+    def prepare_for_training_diff(self, split: float = 0.8):
         from data.train_prep import prepare_data
+        return prepare_data(self.df, split=split)
+
+    def prepare_for_training_winner(self, split: float = 0.8):
+        from data.train_prep_winner import prepare_data
         return prepare_data(self.df, split=split)
     
     

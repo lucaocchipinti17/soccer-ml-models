@@ -1,4 +1,5 @@
 import pandas as pd
+from data.clean_team_data import get_aggregate_context_data
 
 W = 5
 
@@ -33,7 +34,7 @@ def add_rolling_features(df):
 
     return df
 
-def normalize(data):
+def normalize(data, season):
     matches = pd.json_normalize(data)
     keep = {
         'id': 'match_id',
@@ -59,9 +60,8 @@ def normalize(data):
     for c in ['goals_h','goals_a','xg_h','xg_a']:
         m[c] = pd.to_numeric(m[c], errors='coerce')
 
-    # Mark fixtures vs finished matches
+    # Keep only finished matches
     finished = m[m['is_result'] == True].copy()
-    fixtures = m[m['is_result'] == False].copy()
 
 
     # shift data to reflect home team and away team statistics, 2 rows per match, for each team
@@ -118,6 +118,34 @@ def normalize(data):
         )
     )
 
+    # Team-level contextual metrics (computed once per team, then merged as home_/away_)
+    unique_teams = pd.unique(pd.concat([finished['home'], finished['away']], ignore_index=True))
+
+    def build_prefixed(team_name):
+        metrics = get_aggregate_context_data(team_name, season)
+        metrics = {k: v for k, v in metrics.items() if k not in ['team', 'season']}
+        home_pref = {'home': team_name}
+        home_pref.update({f'home_{k}': v for k, v in metrics.items()})
+        away_pref = {'away': team_name}
+        away_pref.update({f'away_{k}': v for k, v in metrics.items()})
+        return home_pref, away_pref
+
+    home_rows = []
+    away_rows = []
+    for t in unique_teams:
+        h, a = build_prefixed(t)
+        home_rows.append(h)
+        away_rows.append(a)
+
+    home_ctx = pd.DataFrame(home_rows)
+    away_ctx = pd.DataFrame(away_rows)
+
+    train_df = (
+        train_df
+        .merge(home_ctx, on='home', how='left')
+        .merge(away_ctx, on='away', how='left')
+    )
+
     # Final target and simple extras
     train_df['home_adv']  = 1  # explicit flag (helps simple models)
     train_df['goal_diff'] = train_df['goals_h'] - train_df['goals_a']  # <-- TARGET
@@ -132,10 +160,12 @@ def normalize(data):
             train_df[c] = train_df[c].fillna(train_df[c].mean())
 
     # Keep only columns we need for modeling & IDs for reference
+    context_cols = [c for c in train_df.columns if c.startswith('home_') or c.startswith('away_')]
     keep_cols = [
         'match_id','datetime','home_id','away_id','home','away','goal_diff','xg_h','xg_a'
-    ] + feature_cols
+    ] + feature_cols + context_cols
 
     train_df = train_df[keep_cols].sort_values('datetime').reset_index(drop=True)
     print(len(train_df), "matches after normalization")
+    print(train_df.shape)
     return train_df

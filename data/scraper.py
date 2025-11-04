@@ -11,7 +11,7 @@ def _f(x):
         return None
 
 class DataScraper:
-    def __init__(self, leagues: Iterable[str], seasons: Iterable[str], output: str = 'normalized_data.csv'):
+    def __init__(self, leagues: Iterable[str], seasons: Iterable[str], output: str = 'normalized_data_with_context.csv'):
         self.leagues = list(leagues)
         self.seasons = list(seasons)
         self.us = UnderstatClient()
@@ -25,7 +25,7 @@ class DataScraper:
         for league in self.leagues:
             for season in self.seasons:
                 raw = self._fetch_raw_matches(league, season)
-                norm = normalize(raw)
+                norm = normalize(raw, season)
                 self.df = pd.concat([self.df, norm], ignore_index=True)
         self.df.sort_values('datetime', inplace=True)
         self.df.to_csv(f'data/{self.output}', index=False)
@@ -46,6 +46,5 @@ class DataScraper:
     def prepare_for_training_winner(self, split: float = 0.8):
         from data.train_prep_winner import prepare_data
         return prepare_data(self.df, split=split)
-    
-    
+
     

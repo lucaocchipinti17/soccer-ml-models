@@ -6,11 +6,6 @@ from models.nn_winner import NeuralNetworkWinner
 import xgboost as xgb
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
-leagues = ['EPL', 'La_Liga', 'Serie_A', 'Bundesliga', 'Ligue_1']
-seasons = [str(year) for year in range(2014, 2025)]
-
-d = DataScraper(leagues=leagues, seasons=seasons)
-d.get_data()
 
 def train_diff_model():
     X_train, y_train, X_valid, y_valid = d.prepare_for_training_diff()
@@ -222,4 +217,10 @@ def compare_winner_models():
     return nn_model, xgb_model
 
 if __name__ == "__main__":
-    compare_winner_models()
+    leagues = ['EPL', 'La_Liga', 'Bundesliga', 'Serie_A', 'Ligue_1']
+    seasons = [str(year) for year in range(2014, 2025)]
+
+    d = DataScraper(leagues=leagues, seasons=seasons)
+    print(d.get_data())
+    
+

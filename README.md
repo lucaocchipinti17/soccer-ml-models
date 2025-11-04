@@ -29,5 +29,53 @@ normalized_data_with_context contains ~80 columns of additional statistics for e
 9. Defensive Metrics (shots against per game, goals allowed per xGa....)
 10. Composite Scores (Attacking Index, Defensive Index, Composite Index)
 
+## Benchmarks: Handmade Neural Network vs. XGBoost
+
+### Overall Performance
+
+Metric                         Neural Network       XGBoost             
+---
+Accuracy                       0.5358               0.5441              
+Cross-Entropy Loss             0.9680               0.9658              
+---
+
+### Per-Class Performance
+
+NEURAL NETWORK - Per-class Performance:
+              precision    recall  f1-score   support
+
+    Home Win     0.5986    0.7150    0.6517      1723
+        Draw     0.3362    0.1584    0.2153      1004
+    Away Win     0.5115    0.5923    0.5489      1241
+
+    accuracy                         0.5358      3968
+   macro avg     0.4821    0.4886    0.4720      3968
+weighted avg     0.5050    0.5358    0.5091      3968
+
+XGBOOST - Per-class Performance:
+              precision    recall  f1-score   support
+
+    Home Win     0.5851    0.7545    0.6591      1723
+        Draw     0.3403    0.1295    0.1876      1004
+    Away Win     0.5345    0.5874    0.5597      1241
+
+    accuracy                         0.5441      3968
+   macro avg     0.4866    0.4905    0.4688      3968
+weighted avg     0.5073    0.5441    0.5087      3968
+
+### Confusion Matrices
+
+NEURAL NETWORK - Confusion Matrix:
+[[1232  157  334]
+ [ 477  159  368]
+ [ 349  157  735]]
+
+XGBOOST - Confusion Matrix:
+[[1300  125  298]
+ [ 537  130  337]
+ [ 385  127  729]]
+
+
+
 
 Luca Occhipinti

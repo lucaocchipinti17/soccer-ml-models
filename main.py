@@ -55,7 +55,7 @@ def train_winner_model():
     X_train, y_train, X_valid, y_valid = d.prepare_for_training_winner()
 
     model = NeuralNetworkWinner(input_size=X_train.shape[1], 
-    hidden_size=32, hidden_size2=32, learning_rate=1e-4, weight_decay=5e-4)
+    hidden_size=103, hidden_size2=103, learning_rate=1e-4, weight_decay=5e-4)
     model.train(X_train, y_train, epochs=1000, verbose=True)
     probs = model.predict_proba(X_valid)
     val_loss = model.compute_loss(y_valid, probs)
@@ -131,8 +131,8 @@ def compare_winner_models():
     # Train Neural Network
     nn_model = NeuralNetworkWinner(
         input_size=X_train.shape[1], 
-        hidden_size=32, 
-        hidden_size2=32, 
+        hidden_size=103, 
+        hidden_size2=103, 
         learning_rate=1e-4, 
         weight_decay=5e-4
     )
@@ -222,6 +222,6 @@ if __name__ == "__main__":
 
     d = DataScraper(leagues=leagues, seasons=seasons)
     d.get_data()
-    train_diff_model()
+    compare_winner_models()
     
 

@@ -1,95 +1,33 @@
-# ⚽ soccer-ml-models-main
+# Soccer ML Models
 
 End-to-end experiments and utilities for **soccer match outcome/score prediction**.
 
 ---
 
-## 📦 What’s Inside
+## What’s Inside
 
-- Web scraping utilities to collect historical match data.
-- Data cleaning & feature engineering pipeline.
-- Training scripts for one or more models.
+- Web scraping utilities to collect, enhance, and clean historical match data from Top 5 Leagues, seasons 2014-2025
+- Training scripts for goal differential and match outcome models.
 
 ### Algorithms / Models
-- Custom multi-layer neural network implemented in NumPy (forward/backprop).
+- Custom multi-layer neural network implemented in NumPy to predict goal differential (home goals - away goals) and home outcome (Win/Draw/Lose)
+- NN complete with two layers of customizable size, Adam optimizer, L2 weight decay, and Huber Loss.
+- XGBoost model imported from XGBoost library to benchmark neural networks against.
 
----
+### Match Data 
 
-## 🗂️ Repository Structure (truncated)
-```
-./
-  main.py
-  data/
-    clean.py
-    normalized_data.csv
-    scraper.py
-    train_prep.py
-  models/
-    nn_diff.py
-    nn_goals.py
-```
+Match Data for each game from Top 5 European leagues from 2024-2025 stored in normalized_data.csv, contains rolling averages of key stats for each team over last 5 games.
+normalized_data_with_context contains ~80 columns of additional statistics for each team throughout that season, including:
+1. Core Efficiency Metrics (Shots per game, Goals per game..)
+2. Situational Metrics (% of xG scored in open play, xG from penalties...)
+3. Formation Metrics (% of time spent in main formation, xG per 90 in main formation...)
+4. Game State Metrics (% of time leading in game, % of time trailing...)
+5. Timing Metrics (% of goals scored in first half, xG differential in second half per game...)
+6. Shooting Metrics (% of shots inside the box, % of shots outside the box...)
+7. Attack Speed Metrics (% of xG from fast attacks, xG allowed from fast attacks per 90...)
+8. Shot Result Metrics (% of blocked shots, goal conversation rate...)
+9. Defensive Metrics (shots against per game, goals allowed per xGa....)
+10. Composite Scores (Attacking Index, Defensive Index, Composite Index)
 
----
-
-## ⚙️ Setup
-
-```bash
-# 1) Clone
-git clone https://github.com/lucaocchipinti17/soccer-ml-models-main.git
-cd soccer-ml-models-main
-
-# 2) Create a virtual environment (recommended)
-python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
-```
-
----
-
-## ▶️ Usage (examples)
-
-> Adjust paths and script names to match your repository layout.
-
-- **Preprocess data**
-```bash
-python src/data_preprocessing.py
-```
-
-- **Train a model**
-```bash
-python src/train.py
-```
-
-- **Evaluate**
-```bash
-python src/evaluate_models.py
-```
-
-- **Run a notebook**
-```bash
-jupyter lab
-```
-
----
-
-## 📝 Notes
-
-- Data directories detected: data
-- Notebooks detected: none
-- CSV samples: data/normalized_data.csv
-
----
-
-## 🛣️ To-Do / Future Work
-
-- [ ] Review and document all CLI entry points and parameters
-- [ ] Add a reproducible data acquisition script (scrape or download)
-- [ ] Formalize a Makefile / task runner for end-to-end pipeline
-- [ ] Unit tests for preprocessing and metrics
-- [ ] Add experiment tracking (Weights & Biases or MLflow)
-- [ ] Provide baseline metrics with fixed train/valid/test splits
-- [ ] Dockerfile for environment reproducibility
-
----
-
-## 👤 Author
 
 Luca Occhipinti

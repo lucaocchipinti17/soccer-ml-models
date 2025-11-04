@@ -221,6 +221,7 @@ if __name__ == "__main__":
     seasons = [str(year) for year in range(2014, 2025)]
 
     d = DataScraper(leagues=leagues, seasons=seasons)
-    print(d.get_data())
+    d.get_data()
+    train_diff_model()
     
 
